@@ -27,11 +27,11 @@ public class AstraStreaming {
     private String PULSAR_SUBSCRIPTION_NAME;
 
     private PulsarClient client;
-    private static Producer<StockPrice> producer;
-    private static Consumer<StockPrice> consumer;
-    private static Reader<StockPrice> reader;
+    private Producer<StockPrice> producer;
+    private Consumer<StockPrice> consumer;
+    private Reader<StockPrice> reader;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private Schema schema = JSONSchema.of(StockPrice.class);
+    private final Schema<StockPrice> schema = JSONSchema.of(StockPrice.class);
 
     public AstraStreaming() {}
 
@@ -51,10 +51,10 @@ public class AstraStreaming {
 
     public Reader<StockPrice> getReader() {
     // Create reusable producer instance to stream chat messages to other consumers
-        if ( this.client != null && this.reader == null ) {
+        if ( client != null && reader == null ) {
             // Create reader on a topic
             try {
-                this.reader = client.newReader(schema)
+                reader = client.newReader(schema)
                         .readerName(PULSAR_SUBSCRIPTION_NAME + " reader")
                         .topic(PULSAR_TOPIC_URL)
                         .startMessageId(MessageId.latest)
@@ -69,9 +69,9 @@ public class AstraStreaming {
     public Consumer<StockPrice> getConsumer() {
 
         // Create reusable producer instance to stream chat messages to other consumers
-        if ( this.client != null && this.consumer == null ) {
+        if ( client != null && consumer == null ) {
             try {
-                this.consumer = client.newConsumer(schema)
+                consumer = client.newConsumer(schema)
                         .consumerName("DataStock App consumer")
                         .subscriptionType(SubscriptionType.Key_Shared)
                         .topic(PULSAR_TOPIC_URL)
@@ -86,9 +86,9 @@ public class AstraStreaming {
     public Producer<StockPrice> getProducer() {
 
         // Create reusable producer instance to stream chat messages to other consumers
-        if ( this.client != null && this.producer == null ) {
+        if ( client != null && producer == null ) {
             try {
-                this.producer = client.newProducer(schema)
+                producer = client.newProducer(schema)
                         .topic(PULSAR_TOPIC_URL)
                         .producerName(PULSAR_SUBSCRIPTION_NAME + " producer")
                         .create();
