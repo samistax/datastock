@@ -15,16 +15,17 @@ import java.time.format.DateTimeFormatter;
 public class StockPrice {
 
     @PrimaryKeyColumn(name = "symbol", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
-    @CassandraType(type = CassandraType.Name.TEXT)
+    //@CassandraType(type = CassandraType.Name.TEXT)
     private String symbol;
     @PrimaryKeyColumn(name = "time", ordinal = 1, type = PrimaryKeyType.CLUSTERED)
-    @CassandraType(type = CassandraType.Name.TIMESTAMP)
+   /* @CassandraType(type = CassandraType.Name.TIMESTAMP)
     // Declare explicitly serializer and deserializer. Support for Java 8 - Date/Time API is not enabled by default
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime time;
+*/
 
-    // Other StockUnit fields
+    private String time;
     private double open;
     private double high;
     private double low;
@@ -36,16 +37,10 @@ public class StockPrice {
 
     public StockPrice() {
     }
-
     public StockPrice(String symbol, StockUnit unit) {
         if (symbol != null && unit != null) {
             this.symbol = symbol;
-
-            // Converting StockUnit time format to LocalDateTime
-            DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime time = LocalDateTime.parse(unit.getDate(), dtFormatter);
-
-            this.time = time;
+            this.time = unit.getDate();
             this.open = unit.getOpen();
             this.high = unit.getHigh();
             this.low = unit.getLow();
@@ -65,11 +60,11 @@ public class StockPrice {
         this.symbol = symbol;
     }
 
-    public LocalDateTime getTime() {
+    public String getTime() {
         return time;
     }
 
-    public void setTime(LocalDateTime time) {
+    public void setTime(String time) {
         this.time = time;
     }
 

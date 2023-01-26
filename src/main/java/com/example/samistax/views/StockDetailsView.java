@@ -33,8 +33,9 @@ public class StockDetailsView extends VerticalLayout {
             var duration = System.currentTimeMillis() - startTime;
 
             stockPriceGrid.setItems(stockPrices);
-            stockSymbolSelector.setLabel(stockPrices.size() + " symbols fetched in " + duration + "ms.");
+            stockSymbolSelector.setLabel(stockPrices.size() + " results fetched in " + duration + "ms.");
         });
+        add("Apache Pulsar Sink persisted stock prices in Cassandra DB");
         add(stockSymbolSelector);
         add(stockPriceGrid);
     }

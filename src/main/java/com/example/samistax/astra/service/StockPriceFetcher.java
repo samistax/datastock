@@ -2,10 +2,7 @@ package com.example.samistax.astra.service;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import com.crazzyghost.alphavantage.AlphaVantage;
 import com.crazzyghost.alphavantage.AlphaVantageException;
@@ -14,9 +11,7 @@ import com.crazzyghost.alphavantage.parameters.OutputSize;
 import com.crazzyghost.alphavantage.timeseries.response.StockUnit;
 import com.crazzyghost.alphavantage.timeseries.response.TimeSeriesResponse;
 import com.example.samistax.astra.data.StockPrice;
-import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.PulsarClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,19 +62,15 @@ public class StockPriceFetcher {
         if ( astraStreaming != null ) {
             // Get handle to Pulsar producer for streaming stock info to Astra
             Producer<StockPrice> producer = astraStreaming.getProducer();
-            if ( producer != null && true) {
+            if ( producer != null) {
                 // Send messages using asynchronously
+                var startTime = System.currentTimeMillis();
                 for (StockPrice stockPrice : ticks) {
                     producer.sendAsync(stockPrice);
                 }
-            } else {
-                try {
-                    producer.send(ticks.get(0));
-                } catch (PulsarClientException e) {
-                    throw new RuntimeException(e);
-                }
+                var duration = System.currentTimeMillis() - startTime;
+                logger.info(ticks.size() + " pulsar messages sent in " + duration + "ms.");
             }
-
         }
     }
     public void handleFailure(AlphaVantageException error) {

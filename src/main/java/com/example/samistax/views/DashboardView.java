@@ -17,7 +17,13 @@ import org.apache.pulsar.client.api.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -54,8 +60,8 @@ public class DashboardView extends VerticalLayout {
             startSymbolDataConsumer(ticker);
 
         });
+        add("Apache Pulsar Producer");
         add(stockSelector);
-
         ohlcChart = createOHLCChart("");
         add(ohlcChart);
     }
@@ -69,7 +75,11 @@ public class DashboardView extends VerticalLayout {
         seriesTooltip.setPointFormat("<b><u>{series.name}:</u></b> <br>High: {point.high}, <br>Low: {point.low}, <br>Open: {point.open}, <br>Close: {point.close}");
 
         var configuration = chart.getConfiguration();
-        configuration.getTitle().setText(ticker + " Stock Price");
+        var tickerLabel = "";
+        if ( ticker != null ) {
+            tickerLabel = "("+ticker + " stock data)";
+        }
+        configuration.getTitle().setText("Apache Pulsar Consumer "+tickerLabel);
         configuration.setTooltip(tooltip);
 
         dataSeries = new DataSeries(ticker + " Stock Price");
@@ -97,7 +107,9 @@ public class DashboardView extends VerticalLayout {
     private OhlcItem OhlcItemFromStrockPrice(StockPrice data) {
         var item = new OhlcItem();
         if (data != null) {
-            item.setX(data.getTime().toInstant(ZoneOffset.UTC)); // From DateTime object
+            DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
+            LocalDateTime localDateTime = LocalDateTime.parse(data.getTime(), dtFormatter);
+            item.setX(localDateTime.toInstant(ZoneOffset.UTC));
             item.setLow(data.getLow());
             item.setHigh(data.getHigh());
             item.setClose(data.getClose());
@@ -128,7 +140,7 @@ public class DashboardView extends VerticalLayout {
 
             // Vaadin Chart updater Thread
             chartUpdateThread = new Thread(() -> {
-                logger.info("chartUpdateThread: Starting Thread " + Thread.currentThread().getId());
+                logger.debug("chartUpdateThread: Starting Thread " + Thread.currentThread().getId());
                 CompletableFuture<Message<StockPrice>> future;
                 while ((future = consumer.receiveAsync()) != null) {
                     try {
@@ -141,16 +153,16 @@ public class DashboardView extends VerticalLayout {
                         consumer.acknowledgeAsync(msg);
 
                         // Slow down reading messages from stream for smoother chart rendering
-                        Thread.sleep(100);
+                        Thread.sleep(75);
 
                     } catch (InterruptedException e) {
-                        logger.info("chartUpdateThread: Thread Interrupted " + Thread.currentThread().getId());
+                        logger.debug("chartUpdateThread: Thread Interrupted " + Thread.currentThread().getId());
                         break;
                     } catch (ExecutionException e) {
                         throw new RuntimeException(e);
                     }
                 }
-                logger.info("chartUpdateThread: Thread Terminated " + Thread.currentThread().getId());
+                logger.debug("chartUpdateThread: Thread Terminated " + Thread.currentThread().getId());
             });
             chartUpdateThread.start();
         }

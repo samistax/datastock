@@ -143,27 +143,10 @@
         </dependency>
         <!-- Project specific dependencies -->
         <dependency>
-            <groupId>org.apache.pulsar</groupId>
-            <artifactId>pulsar-package-core</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.pulsar</groupId>
-            <artifactId>pulsar-client-original</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.pulsar</groupId>
-            <artifactId>pulsar-client-admin-original</artifactId>
-            <version>2.10.3</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.conscrypt/conscrypt-openjdk-uber -->
-        <dependency>
             <groupId>org.conscrypt</groupId>
             <artifactId>conscrypt-openjdk-uber</artifactId>
             <version>2.5.2</version>
         </dependency>
-
 
         <dependency>
             <groupId>com.datastax.astra</groupId>
@@ -288,6 +271,5 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 </project>
