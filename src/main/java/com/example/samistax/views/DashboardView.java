@@ -45,8 +45,8 @@ public class DashboardView extends VerticalLayout {
         var stockSelector = new StockSymbolComboBox("Company");
         stockSelector.setWidth(50, Unit.PERCENTAGE);
         stockSelector.addValueChangeListener(e -> {
-            String ticker = e.getValue().getSymbol();
-            Chart newOhlcChart = createOHLCChart(e.getValue().getSymbol());
+            String ticker = e.getValue().symbol();
+            Chart newOhlcChart = createOHLCChart(e.getValue().symbol());
             replace(ohlcChart, newOhlcChart);
             ohlcChart = newOhlcChart;
 

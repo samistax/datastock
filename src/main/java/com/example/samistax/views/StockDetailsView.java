@@ -26,7 +26,7 @@ public class StockDetailsView extends VerticalLayout {
         var stockSymbolSelector = new StockSymbolComboBox("Stock Ticker");
         stockSymbolSelector.setWidth(50, Unit.PERCENTAGE);
         stockSymbolSelector.addValueChangeListener(e -> {
-            var ticker = e.getValue().getSymbol();
+            var ticker = e.getValue().symbol();
 
             var startTime = System.currentTimeMillis();
             var stockPrices = stockPriceService.findAllByTicker(ticker);
