@@ -1,30 +1,16 @@
 package com.example.samistax.astra.data;
 
 import com.crazzyghost.alphavantage.timeseries.response.StockUnit;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
-import org.springframework.data.cassandra.core.mapping.CassandraType;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 import org.springframework.data.cassandra.core.mapping.Table;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Table("stock_price")
 public class StockPrice {
 
     @PrimaryKeyColumn(name = "symbol", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
-    //@CassandraType(type = CassandraType.Name.TEXT)
     private String symbol;
     @PrimaryKeyColumn(name = "time", ordinal = 1, type = PrimaryKeyType.CLUSTERED)
-   /* @CassandraType(type = CassandraType.Name.TIMESTAMP)
-    // Declare explicitly serializer and deserializer. Support for Java 8 - Date/Time API is not enabled by default
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
-    private LocalDateTime time;
-*/
-
     private String time;
     private double open;
     private double high;
@@ -35,8 +21,8 @@ public class StockPrice {
     private double dividendamount;
     private double splitcoefficient;
 
-    public StockPrice() {
-    }
+    public StockPrice() {}
+
     public StockPrice(String symbol, StockUnit unit) {
         if (symbol != null && unit != null) {
             this.symbol = symbol;
