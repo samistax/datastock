@@ -6,10 +6,13 @@ import com.example.samistax.components.StockSymbolComboBox;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
+import java.text.DecimalFormat;
 
 @PageTitle("Stock Details")
 @Route(value = "stock-detail", layout = MainLayout.class)
@@ -19,11 +22,18 @@ public class StockDetailsView extends VerticalLayout {
     private StockSymbolComboBox stockSymbolSelector;
 
     public StockDetailsView(StockPriceService stockPriceService) {
-
-        var stockPriceGrid = new Grid<>(StockPrice.class);
-        stockPriceGrid.getColumnByKey("time").setAutoWidth(true);
-
+        var decimalFormat = new DecimalFormat("#.00");
+        var stockPriceGrid = new Grid<StockPrice>();
         var stockSymbolSelector = new StockSymbolComboBox("Stock Ticker");
+
+        stockPriceGrid.addColumn(StockPrice::getSymbol).setHeader("Symbol");
+        stockPriceGrid.addColumn(StockPrice::getTime).setAutoWidth(true).setHeader("Time").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getOpen())).setHeader("Open").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getHigh())).setHeader("High").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getLow())).setHeader("Low").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getClose())).setHeader("Close").setSortable(true);
+        stockPriceGrid.addColumn(StockPrice::getVolume).setHeader("Volume").setSortable(true);
+
         stockSymbolSelector.setWidth(50, Unit.PERCENTAGE);
         stockSymbolSelector.addValueChangeListener(e -> {
             var ticker = e.getValue().symbol();
@@ -33,10 +43,14 @@ public class StockDetailsView extends VerticalLayout {
             var duration = System.currentTimeMillis() - startTime;
 
             stockPriceGrid.setItems(stockPrices);
-            stockSymbolSelector.setLabel(stockPrices.size() + " results fetched in " + duration + "ms.");
+            stockSymbolSelector.setHelperText(stockPrices.size() + " results fetched in " + duration + "ms.");
         });
-        add("Apache Pulsar Sink persisted stock prices in Cassandra DB");
-        add(stockSymbolSelector);
-        add(stockPriceGrid);
+
+        add(
+                new Paragraph("Apache Pulsar Sink persisted stock prices in Cassandra DB"),
+                stockSymbolSelector,
+                stockPriceGrid
+        );
     }
+
 }

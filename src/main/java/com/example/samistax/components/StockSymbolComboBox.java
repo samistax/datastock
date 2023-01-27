@@ -7,8 +7,9 @@ public class StockSymbolComboBox extends ComboBox<StockSymbol> {
 
     public StockSymbolComboBox(String label) {
         super();
+        setLabel(label);
         setItems(StockSymbol.supportedSymbols());
         setPlaceholder("Search by company");
-        setItemLabelGenerator(stockRecord -> stockRecord.name());
+        setItemLabelGenerator(StockSymbol::name);
     }
 }

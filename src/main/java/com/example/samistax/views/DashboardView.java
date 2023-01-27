@@ -7,9 +7,10 @@ import com.example.samistax.astra.service.StockPriceService;
 import com.example.samistax.components.StockSymbolComboBox;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.Unit;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -17,13 +18,10 @@ import org.apache.pulsar.client.api.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -32,7 +30,8 @@ import java.util.concurrent.ExecutionException;
 public class DashboardView extends VerticalLayout {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final AstraStreaming astraStreaming;
-    private Chart ohlcChart;
+    private Chart ohlcChart = createOHLCChart("");
+    ;
 
     // Variables used for async chart updating
     private DataSeries dataSeries;
@@ -40,13 +39,13 @@ public class DashboardView extends VerticalLayout {
 
     public DashboardView(StockPriceService stockPriceService, AstraStreaming astraStreaming, StockPriceFetcher stockPriceFetcher) {
         this.astraStreaming = astraStreaming;
-
-
         var stockSelector = new StockSymbolComboBox("Company");
-        stockSelector.setWidth(50, Unit.PERCENTAGE);
+
+        stockSelector.setWidth("50%");
         stockSelector.addValueChangeListener(e -> {
-            String ticker = e.getValue().symbol();
-            Chart newOhlcChart = createOHLCChart(e.getValue().symbol());
+            var ticker = e.getValue().symbol();
+            var newOhlcChart = createOHLCChart(ticker);
+
             replace(ohlcChart, newOhlcChart);
             ohlcChart = newOhlcChart;
 
@@ -60,42 +59,45 @@ public class DashboardView extends VerticalLayout {
             startSymbolDataConsumer(ticker);
 
         });
-        add("Apache Pulsar Producer");
-        add(stockSelector);
-        ohlcChart = createOHLCChart("");
-        add(ohlcChart);
+
+        add(
+                new Paragraph("Apache Pulsar Producer"),
+                stockSelector,
+                ohlcChart
+        );
     }
 
     public Chart createOHLCChart(String ticker) {
-
         var chart = new Chart(ChartType.OHLC);
+
         var tooltip = new Tooltip();
         tooltip.setPointFormat("<b>{point.x}</b>: {series.name}: {point.y}");
+
         var seriesTooltip = new SeriesTooltip();
         seriesTooltip.setPointFormat("<b><u>{series.name}:</u></b> <br>High: {point.high}, <br>Low: {point.low}, <br>Open: {point.open}, <br>Close: {point.close}");
 
         var configuration = chart.getConfiguration();
         var tickerLabel = "";
-        if ( ticker != null ) {
-            tickerLabel = "("+ticker + " stock data)";
+        if (ticker != null) {
+            tickerLabel = "(" + ticker + " stock data)";
         }
-        configuration.getTitle().setText("Apache Pulsar Consumer "+tickerLabel);
+        configuration.getTitle().setText("Apache Pulsar Consumer " + tickerLabel);
         configuration.setTooltip(tooltip);
 
         dataSeries = new DataSeries(ticker + " Stock Price");
 
-        var plotOptionsOhlc = new PlotOptionsOhlc();
         var grouping = new DataGrouping();
         grouping.addUnit(new TimeUnitMultiples(TimeUnit.MINUTE, 1, 5, 15));
         grouping.addUnit(new TimeUnitMultiples(TimeUnit.HOUR, 1, 24));
         grouping.addUnit(new TimeUnitMultiples(TimeUnit.DAY, 1, 7, 30));
 
-        plotOptionsOhlc.setDataGrouping(grouping);
-        plotOptionsOhlc.setAllowPointSelect(true);
-        plotOptionsOhlc.setAnimation(true);
-        plotOptionsOhlc.setTooltip(seriesTooltip);
+        var plotOptions = new PlotOptionsOhlc();
+        plotOptions.setDataGrouping(grouping);
+        plotOptions.setAllowPointSelect(true);
+        plotOptions.setAnimation(true);
+        plotOptions.setTooltip(seriesTooltip);
 
-        dataSeries.setPlotOptions(plotOptionsOhlc);
+        dataSeries.setPlotOptions(plotOptions);
         configuration.setSeries(dataSeries);
 
         RangeSelector rangeSelector = new RangeSelector();
@@ -104,7 +106,7 @@ public class DashboardView extends VerticalLayout {
         return chart;
     }
 
-    private OhlcItem OhlcItemFromStrockPrice(StockPrice data) {
+    private OhlcItem OhlcItemFromStockPrice(StockPrice data) {
         var item = new OhlcItem();
         if (data != null) {
             DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -120,13 +122,9 @@ public class DashboardView extends VerticalLayout {
     }
 
     @Override
-    protected void onAttach(AttachEvent attachEvent) {
-        super.onAttach(attachEvent);
-    }
-
-    @Override
     protected void onDetach(DetachEvent detachEvent) {
         super.onDetach(detachEvent);
+
         // Terminate chartUpdateThread when the view is detached
         if (chartUpdateThread != null) {
             chartUpdateThread.interrupt();
@@ -136,6 +134,7 @@ public class DashboardView extends VerticalLayout {
     private void startSymbolDataConsumer(String ticker) {
         // Read streamed stock prices from beg of the queue using Pulsar Consumer
         var consumer = astraStreaming.getConsumer();
+        var ui = UI.getCurrent();
         if (consumer != null) {
 
             // Vaadin Chart updater Thread
@@ -146,8 +145,9 @@ public class DashboardView extends VerticalLayout {
                     try {
                         Message<StockPrice> msg = future.get();
                         StockPrice data = msg.getValue();
+
                         // Update Vaadin Charts after each received stock price update
-                        getUI().ifPresent(ui -> ui.access(() -> dataSeries.add(OhlcItemFromStrockPrice(data), true, false)));
+                        ui.access(() -> dataSeries.add(OhlcItemFromStockPrice(data), true, false));
 
                         // Acknowledge message is received.
                         consumer.acknowledgeAsync(msg);
