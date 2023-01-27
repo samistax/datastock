@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.pulsar.annotation.EnablePulsar;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 
@@ -19,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * and some desktop browsers.
  */
 @Push
+@EnablePulsar
 @EnableScheduling
 @SpringBootApplication
 @Theme(value = "datastock")
