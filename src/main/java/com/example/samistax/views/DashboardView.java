@@ -103,7 +103,7 @@ public class DashboardView extends VerticalLayout {
     }
 
 
-    @PulsarListener
+    @PulsarListener(subscriptionName = "DataStockAppConsumer", topics = "datastock-feed-7")
     public void stockPriceReceived(StockPrice stockPrice) {
         getUI().ifPresent(ui -> {
             ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));

@@ -3,9 +3,11 @@ package com.example.samistax;
 import com.crazzyghost.alphavantage.AlphaVantage;
 import com.crazzyghost.alphavantage.Config;
 import com.example.samistax.astra.DataStaxAstraProperties;
+import com.example.samistax.astra.data.StockPrice;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.theme.Theme;
+import org.apache.pulsar.client.api.Schema;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +15,8 @@ import org.springframework.boot.autoconfigure.cassandra.CqlSessionBuilderCustomi
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.pulsar.annotation.EnablePulsar;
+import org.springframework.pulsar.core.DefaultSchemaResolver;
+import org.springframework.pulsar.core.SchemaResolver;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.nio.file.Path;
@@ -55,6 +59,11 @@ public class Application implements AppShellConfigurator {
         Path bundle = astraProperties.getSecureConnectBundle().toPath();
         return builder -> builder
                 .withCloudSecureConnectBundle(bundle);
+    }
+
+    @Bean
+    public SchemaResolver.SchemaResolverCustomizer<DefaultSchemaResolver> schemaResolverCustomizer() {
+        return (schemaResolver) -> schemaResolver.addCustomSchemaMapping(StockPrice.class, Schema.JSON(StockPrice.class));
     }
 
 }
