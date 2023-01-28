@@ -35,6 +35,7 @@ public class Application implements AppShellConfigurator {
     @Value("${alphavantage.api.key}")
     private String ALPHA_VANTAGE_API_KEY;
 
+
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
@@ -52,7 +53,8 @@ public class Application implements AppShellConfigurator {
     @Bean
     public CqlSessionBuilderCustomizer sessionBuilderCustomizer(DataStaxAstraProperties astraProperties) {
         Path bundle = astraProperties.getSecureConnectBundle().toPath();
-        return builder -> builder.withCloudSecureConnectBundle(bundle);
+        return builder -> builder
+                .withCloudSecureConnectBundle(bundle);
     }
 
 }
