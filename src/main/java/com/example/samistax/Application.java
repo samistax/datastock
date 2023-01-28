@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.pulsar.annotation.EnablePulsar;
 import org.springframework.pulsar.core.DefaultSchemaResolver;
 import org.springframework.pulsar.core.SchemaResolver;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.nio.file.Path;
 
@@ -30,7 +29,6 @@ import java.nio.file.Path;
  */
 @Push
 @EnablePulsar
-@EnableScheduling
 @SpringBootApplication
 @EnableConfigurationProperties(DataStaxAstraProperties.class)
 @Theme(value = "datastock")

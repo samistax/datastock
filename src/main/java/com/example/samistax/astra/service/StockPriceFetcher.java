@@ -52,7 +52,7 @@ public class StockPriceFetcher {
                 .delayElements(Duration.ofMillis(100))
                 .subscribe(stockPrice -> {
                     try {
-                        System.out.println("Sending " + stockPrice);
+                        logger.debug("Sending " + stockPrice);
                         pulsarTemplate.sendAsync(stockPrice);
                     } catch (PulsarClientException e) {
                         throw new RuntimeException(e);

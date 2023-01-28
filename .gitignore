@@ -22,4 +22,4 @@ webpack.generated.js
 
 # Contains local config that shouldn't go into the repository
 config/local/
-secure-connect-demostax.zip
+secure-connect.zip

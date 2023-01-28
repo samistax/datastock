@@ -48,6 +48,13 @@ public class DashboardView extends VerticalLayout {
         );
     }
 
+    @PulsarListener
+    public void stockPriceReceived(StockPrice stockPrice) {
+        getUI().ifPresent(ui -> {
+            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
+        });
+    }
+
     public Chart createOhlcChart(String ticker) {
         var chart = new Chart(ChartType.OHLC);
 
@@ -100,13 +107,5 @@ public class DashboardView extends VerticalLayout {
         }
         return item;
 
-    }
-
-
-    @PulsarListener(subscriptionName = "DataStockAppConsumer", topics = "datastock-feed-7")
-    public void stockPriceReceived(StockPrice stockPrice) {
-        getUI().ifPresent(ui -> {
-            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
-        });
     }
 }
