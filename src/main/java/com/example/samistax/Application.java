@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.cassandra.CqlSessionBuilderCustomizer;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.pulsar.annotation.EnablePulsar;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -27,10 +28,11 @@ import java.nio.file.Path;
 @EnablePulsar
 @EnableScheduling
 @SpringBootApplication
+@EnableConfigurationProperties(DataStaxAstraProperties.class)
 @Theme(value = "datastock")
 public class Application implements AppShellConfigurator {
 
-    @Value("${alphavantage.api.key:}")
+    @Value("${alphavantage.api.key}")
     private String ALPHA_VANTAGE_API_KEY;
 
     public static void main(String[] args) {
@@ -46,6 +48,7 @@ public class Application implements AppShellConfigurator {
                 .build();
         AlphaVantage.api().init(cfg);
     }
+
     @Bean
     public CqlSessionBuilderCustomizer sessionBuilderCustomizer(DataStaxAstraProperties astraProperties) {
         Path bundle = astraProperties.getSecureConnectBundle().toPath();
