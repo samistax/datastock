@@ -46,9 +46,10 @@ public class StockPriceProducer {
         var stockUnits = response.getStockUnits();
         // Reverse StockUnits to list the oldest items first
         Collections.reverse(stockUnits);
+        var stockPrices = stockUnits.stream().map(unit -> new StockPrice(symbol, unit));
 
         // Publish items to pulsar with 100ms intervals
-        Flux.fromStream(stockUnits.stream().map(unit -> new StockPrice(symbol, unit)))
+        Flux.fromStream(stockPrices)
                 .delayElements(Duration.ofMillis(100))
                 .subscribe(stockPrice -> {
                     try {
