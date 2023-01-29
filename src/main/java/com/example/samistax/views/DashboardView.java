@@ -1,30 +1,43 @@
 package com.example.samistax.views;
 
 import com.example.samistax.astra.data.StockPrice;
-import com.example.samistax.astra.service.StockPriceFetcher;
+import com.example.samistax.astra.service.StockPriceConsumer;
+import com.example.samistax.astra.service.StockPriceProducer;
 import com.example.samistax.components.StockSymbolComboBox;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import org.springframework.pulsar.annotation.PulsarListener;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-@Service
 @PageTitle("Dashboard")
 @Route(value = "", layout = MainLayout.class)
 public class DashboardView extends VerticalLayout {
     private Chart ohlcChart = createOhlcChart("");
     private DataSeries dataSeries;
 
-    public DashboardView(StockPriceFetcher stockPriceFetcher) {
+    public DashboardView(StockPriceProducer producer, StockPriceConsumer consumer) {
+        var ui = UI.getCurrent();
+
+        consumer.getStockPrices().subscribe(stockPrice -> {
+            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
+        });
+
+        add(
+                new Paragraph("Apache Pulsar Producer"),
+                getStockSymbolComboBox(producer),
+                ohlcChart
+        );
+    }
+
+    private StockSymbolComboBox getStockSymbolComboBox(StockPriceProducer stockPriceProducer) {
         var stockSelector = new StockSymbolComboBox("Company");
 
         stockSelector.setWidth("50%");
@@ -39,19 +52,11 @@ public class DashboardView extends VerticalLayout {
             dataSeries.clear();
 
             // Generate stock data price items (and push them to Astra Streaming)
-            stockPriceFetcher.fetchStockDataSeries(ticker);
+            stockPriceProducer.produceStockPriceData(ticker);
         });
+        return stockSelector;
+    }
 
-        add(
-                new Paragraph("Apache Pulsar Producer"),
-                stockSelector,
-                ohlcChart
-        );
-    }
-    @PulsarListener
-    public void stockPriceReceived(StockPrice stockPrice) {
-        getUI().ifPresent(ui -> ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false)));
-    }
     public Chart createOhlcChart(String ticker) {
         var chart = new Chart(ChartType.OHLC);
 

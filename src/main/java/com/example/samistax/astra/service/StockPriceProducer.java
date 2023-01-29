@@ -18,17 +18,17 @@ import java.time.Duration;
 import java.util.Collections;
 
 @Component
-public class StockPriceFetcher {
+public class StockPriceProducer {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final PulsarTemplate<StockPrice> pulsarTemplate;
 
     @Autowired
-    public StockPriceFetcher(PulsarTemplate<StockPrice> pulsarTemplate) {
+    public StockPriceProducer(PulsarTemplate<StockPrice> pulsarTemplate) {
         this.pulsarTemplate = pulsarTemplate;
     }
 
-    public void fetchStockDataSeries(final String symbol) {
+    public void produceStockPriceData(final String symbol) {
 
         AlphaVantage.api()
                 .timeSeries()
@@ -52,7 +52,6 @@ public class StockPriceFetcher {
                 .delayElements(Duration.ofMillis(100))
                 .subscribe(stockPrice -> {
                     try {
-                        logger.debug("Sending " + stockPrice);
                         pulsarTemplate.sendAsync(stockPrice);
                     } catch (PulsarClientException e) {
                         throw new RuntimeException(e);
