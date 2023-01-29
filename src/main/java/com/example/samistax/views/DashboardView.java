@@ -22,39 +22,38 @@ import java.util.Locale;
 public class DashboardView extends VerticalLayout {
     private Chart ohlcChart = createOhlcChart("");
     private DataSeries dataSeries;
+    private final StockPriceProducer producer;
 
     public DashboardView(StockPriceProducer producer, StockPriceConsumer consumer) {
+        this.producer = producer;
         var ui = UI.getCurrent();
+        var stockSelector = new StockSymbolComboBox("Company");
+
+        stockSelector.setWidth("50%");
+        stockSelector.addValueChangeListener(e -> tickerSelected(e.getValue().symbol()));
 
         consumer.getStockPrices().subscribe(stockPrice -> {
-            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
+            ui.access(() -> appendPriceToDataSeries(stockPrice));
         });
 
         add(
                 new Paragraph("Apache Pulsar Producer"),
-                getStockSymbolComboBox(producer),
+                stockSelector,
                 ohlcChart
         );
     }
 
-    private StockSymbolComboBox getStockSymbolComboBox(StockPriceProducer stockPriceProducer) {
-        var stockSelector = new StockSymbolComboBox("Company");
+    private void tickerSelected(String ticker) {
+        var newOhlcChart = createOhlcChart(ticker);
 
-        stockSelector.setWidth("50%");
-        stockSelector.addValueChangeListener(e -> {
-            var ticker = e.getValue().symbol();
-            var newOhlcChart = createOhlcChart(ticker);
+        replace(ohlcChart, newOhlcChart);
+        ohlcChart = newOhlcChart;
 
-            replace(ohlcChart, newOhlcChart);
-            ohlcChart = newOhlcChart;
+        // Clear old data series, reusing chart for multiple tickers
+        dataSeries.clear();
 
-            // Clear old data series, reusing chart for multiple tickers
-            dataSeries.clear();
-
-            // Generate stock data price items (and push them to Astra Streaming)
-            stockPriceProducer.produceStockPriceData(ticker);
-        });
-        return stockSelector;
+        // Generate stock data price items (and push them to Astra Streaming)
+        producer.produceStockPriceData(ticker);
     }
 
     public Chart createOhlcChart(String ticker) {
@@ -108,6 +107,9 @@ public class DashboardView extends VerticalLayout {
             item.setOpen(data.getOpen());
         }
         return item;
+    }
 
+    private void appendPriceToDataSeries(StockPrice stockPrice) {
+        dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false);
     }
 }
