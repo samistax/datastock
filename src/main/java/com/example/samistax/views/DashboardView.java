@@ -1,12 +1,9 @@
 package com.example.samistax.views;
 
 import com.example.samistax.astra.data.StockPrice;
-import com.example.samistax.astra.service.AstraStreaming;
-import com.example.samistax.astra.service.StockPriceFetcher;
-import com.example.samistax.astra.service.StockPriceService;
+import com.example.samistax.astra.service.StockPriceConsumer;
+import com.example.samistax.astra.service.StockPriceProducer;
 import com.example.samistax.components.StockSymbolComboBox;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
@@ -14,37 +11,39 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import org.apache.pulsar.client.api.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @PageTitle("Dashboard")
 @Route(value = "", layout = MainLayout.class)
 public class DashboardView extends VerticalLayout {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final AstraStreaming astraStreaming;
-    private Chart ohlcChart = createOHLCChart("");
-    ;
-
-    // Variables used for async chart updating
+    private Chart ohlcChart = createOhlcChart("");
     private DataSeries dataSeries;
-    private Thread chartUpdateThread;
 
-    public DashboardView(StockPriceService stockPriceService, AstraStreaming astraStreaming, StockPriceFetcher stockPriceFetcher) {
-        this.astraStreaming = astraStreaming;
+    public DashboardView(StockPriceProducer producer, StockPriceConsumer consumer) {
+        var ui = UI.getCurrent();
+
+        consumer.getStockPrices().subscribe(stockPrice -> {
+            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
+        });
+
+        add(
+                new Paragraph("Apache Pulsar Producer"),
+                getStockSymbolComboBox(producer),
+                ohlcChart
+        );
+    }
+
+    private StockSymbolComboBox getStockSymbolComboBox(StockPriceProducer stockPriceProducer) {
         var stockSelector = new StockSymbolComboBox("Company");
 
         stockSelector.setWidth("50%");
         stockSelector.addValueChangeListener(e -> {
             var ticker = e.getValue().symbol();
-            var newOhlcChart = createOHLCChart(ticker);
+            var newOhlcChart = createOhlcChart(ticker);
 
             replace(ohlcChart, newOhlcChart);
             ohlcChart = newOhlcChart;
@@ -53,21 +52,12 @@ public class DashboardView extends VerticalLayout {
             dataSeries.clear();
 
             // Generate stock data price items (and push them to Astra Streaming)
-            stockPriceFetcher.fetchStockDataSeries(ticker);
-
-            // Subscribe to symbol ticker data stream from Astra Streaming
-            startSymbolDataConsumer(ticker);
-
+            stockPriceProducer.produceStockPriceData(ticker);
         });
-
-        add(
-                new Paragraph("Apache Pulsar Producer"),
-                stockSelector,
-                ohlcChart
-        );
+        return stockSelector;
     }
 
-    public Chart createOHLCChart(String ticker) {
+    public Chart createOhlcChart(String ticker) {
         var chart = new Chart(ChartType.OHLC);
 
         var tooltip = new Tooltip();
@@ -106,7 +96,7 @@ public class DashboardView extends VerticalLayout {
         return chart;
     }
 
-    private OhlcItem OhlcItemFromStockPrice(StockPrice data) {
+    private OhlcItem ohlcItemFromStockPrice(StockPrice data) {
         var item = new OhlcItem();
         if (data != null) {
             DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -119,52 +109,5 @@ public class DashboardView extends VerticalLayout {
         }
         return item;
 
-    }
-
-    @Override
-    protected void onDetach(DetachEvent detachEvent) {
-        super.onDetach(detachEvent);
-
-        // Terminate chartUpdateThread when the view is detached
-        if (chartUpdateThread != null) {
-            chartUpdateThread.interrupt();
-        }
-    }
-
-    private void startSymbolDataConsumer(String ticker) {
-        // Read streamed stock prices from beg of the queue using Pulsar Consumer
-        var consumer = astraStreaming.getConsumer();
-        var ui = UI.getCurrent();
-        if (consumer != null) {
-
-            // Vaadin Chart updater Thread
-            chartUpdateThread = new Thread(() -> {
-                logger.debug("chartUpdateThread: Starting Thread " + Thread.currentThread().getId());
-                CompletableFuture<Message<StockPrice>> future;
-                while ((future = consumer.receiveAsync()) != null) {
-                    try {
-                        Message<StockPrice> msg = future.get();
-                        StockPrice data = msg.getValue();
-
-                        // Update Vaadin Charts after each received stock price update
-                        ui.access(() -> dataSeries.add(OhlcItemFromStockPrice(data), true, false));
-
-                        // Acknowledge message is received.
-                        consumer.acknowledgeAsync(msg);
-
-                        // Slow down reading messages from stream for smoother chart rendering
-                        Thread.sleep(75);
-
-                    } catch (InterruptedException e) {
-                        logger.debug("chartUpdateThread: Thread Interrupted " + Thread.currentThread().getId());
-                        break;
-                    } catch (ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                logger.debug("chartUpdateThread: Thread Terminated " + Thread.currentThread().getId());
-            });
-            chartUpdateThread.start();
-        }
     }
 }
