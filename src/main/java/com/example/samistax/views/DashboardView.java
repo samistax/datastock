@@ -10,18 +10,19 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.pulsar.annotation.PulsarListener;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+@Service
 @PageTitle("Dashboard")
 @Route(value = "", layout = MainLayout.class)
 public class DashboardView extends VerticalLayout {
     private Chart ohlcChart = createOhlcChart("");
     private DataSeries dataSeries;
-
 
     public DashboardView(StockPriceFetcher stockPriceFetcher) {
         var stockSelector = new StockSymbolComboBox("Company");
@@ -47,14 +48,10 @@ public class DashboardView extends VerticalLayout {
                 ohlcChart
         );
     }
-
     @PulsarListener
     public void stockPriceReceived(StockPrice stockPrice) {
-        getUI().ifPresent(ui -> {
-            ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false));
-        });
+        getUI().ifPresent(ui -> ui.access(() -> dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false)));
     }
-
     public Chart createOhlcChart(String ticker) {
         var chart = new Chart(ChartType.OHLC);
 
