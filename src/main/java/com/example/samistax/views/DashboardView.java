@@ -33,7 +33,7 @@ public class DashboardView extends VerticalLayout {
         stockSelector.addValueChangeListener(e -> tickerSelected(e.getValue().symbol()));
 
         consumer.getStockPrices().subscribe(stockPrice -> {
-            ui.access(() -> appendPriceToDataSeries(stockPrice));
+            ui.access(() -> appendToDataSeries(stockPrice));
         });
 
         add(
@@ -109,7 +109,7 @@ public class DashboardView extends VerticalLayout {
         return item;
     }
 
-    private void appendPriceToDataSeries(StockPrice stockPrice) {
+    private void appendToDataSeries(StockPrice stockPrice) {
         dataSeries.add(ohlcItemFromStockPrice(stockPrice), true, false);
     }
 }
