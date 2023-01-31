@@ -20,14 +20,16 @@ import java.util.Locale;
 @PageTitle("Dashboard")
 @Route(value = "", layout = MainLayout.class)
 public class DashboardView extends VerticalLayout {
-    private Chart ohlcChart = createOhlcChart("");
+    private Chart ohlcChart;
     private DataSeries dataSeries;
     private final StockPriceProducer producer;
 
     public DashboardView(StockPriceProducer producer, StockPriceConsumer consumer) {
         this.producer = producer;
         var ui = UI.getCurrent();
+
         var stockSelector = new StockSymbolComboBox("Company");
+        ohlcChart = createOhlcChart("");
 
         stockSelector.setWidth("50%");
         stockSelector.addValueChangeListener(e -> tickerSelected(e.getValue().symbol()));

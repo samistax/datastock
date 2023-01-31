@@ -50,6 +50,7 @@ public class StockPriceProducer {
 
         // Publish items to pulsar with 100ms intervals
         Flux.fromStream(stockPrices)
+                // Delay elements for demo chart, don't do this in real life
                 .delayElements(Duration.ofMillis(100))
                 .subscribe(stockPrice -> {
                     try {

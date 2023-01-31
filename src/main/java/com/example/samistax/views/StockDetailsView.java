@@ -15,40 +15,42 @@ import java.text.DecimalFormat;
 
 @PageTitle("Stock Details")
 @Route(value = "stock-detail", layout = MainLayout.class)
-@Uses(Icon.class)
 public class StockDetailsView extends VerticalLayout {
 
     private StockSymbolComboBox stockSymbolSelector;
 
     public StockDetailsView(StockPriceService stockPriceService) {
-        var decimalFormat = new DecimalFormat("#.00");
-        var stockPriceGrid = new Grid<StockPrice>();
-        var stockSymbolSelector = new StockSymbolComboBox("Stock Ticker");
-
-        stockPriceGrid.addColumn(StockPrice::getTime).setAutoWidth(true).setHeader("Time").setSortable(true);
-        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getOpen())).setHeader("Open").setSortable(true);
-        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getHigh())).setHeader("High").setSortable(true);
-        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getLow())).setHeader("Low").setSortable(true);
-        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getClose())).setHeader("Close").setSortable(true);
-        stockPriceGrid.addColumn(StockPrice::getVolume).setHeader("Volume").setSortable(true);
-
-        stockSymbolSelector.setWidth("50%");
-        stockSymbolSelector.addValueChangeListener(e -> {
-            var ticker = e.getValue().symbol();
-
-            var startTime = System.currentTimeMillis();
-            var stockPrices = stockPriceService.findAllByTicker(ticker);
-            var duration = System.currentTimeMillis() - startTime;
-
-            stockPriceGrid.setItems(stockPrices);
-            stockSymbolSelector.setHelperText(stockPrices.size() + " results fetched in " + duration + "ms.");
-        });
+        var stockPriceGrid = getStockPriceGrid();
+        var stockSymbolSelector = getSymbolSelector(stockPriceService, stockPriceGrid);
 
         add(
                 new Paragraph("Apache Pulsar Sink persisted stock prices in Cassandra DB"),
                 stockSymbolSelector,
                 stockPriceGrid
         );
+    }
+
+
+    private static Grid<StockPrice> getStockPriceGrid() {
+        var decimalFormat = new DecimalFormat("#.00");
+        var stockPriceGrid = new Grid<StockPrice>();
+        stockPriceGrid.addColumn(StockPrice::getTime).setAutoWidth(true).setHeader("Time").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getOpen())).setHeader("Open").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getHigh())).setHeader("High").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getLow())).setHeader("Low").setSortable(true);
+        stockPriceGrid.addColumn(stockPrice -> decimalFormat.format(stockPrice.getClose())).setHeader("Close").setSortable(true);
+        stockPriceGrid.addColumn(StockPrice::getVolume).setHeader("Volume").setSortable(true);
+        return stockPriceGrid;
+    }
+
+    private static StockSymbolComboBox getSymbolSelector(StockPriceService stockPriceService, Grid<StockPrice> stockPriceGrid) {
+        var stockSymbolSelector = new StockSymbolComboBox("Stock Ticker");
+        stockSymbolSelector.setWidth("50%");
+        stockSymbolSelector.addValueChangeListener(e -> {
+            var stockPrices = stockPriceService.findAllByTicker(e.getValue().symbol());
+            stockPriceGrid.setItems(stockPrices);
+        });
+        return stockSymbolSelector;
     }
 
 }
